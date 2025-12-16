@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>About - Sprint Training Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+	<header class="top-bar">
+        <div class="container">
+            <nav class="nav-links">
+                <a href="index.html">Sprint Training Tool</a>
+                <a href="about.html">About</a>
+            </nav>
+        </div>
+    </header>
+</head>
+<body>
+    
+    <div id="app" class="info-panel">
+        <div>
+            <h1>About Sprint Training Tool</h>
+        </div>
+
+        <div>
+            <section>
+                <h2>Overview</h2>
+                <p>
+                    Sprint Training Tool is designed for sprinters and coaches to manage sprint training sessions efficiently. It provides precise timing, distance tracking, and start commands to enhance performance.
+                </p>
+            </section>
+
+            <section>
+                <h2>Main Features</h2>
+                <ul>
+                    <li><strong>Timer:</strong> Millisecond-precision timer for each sprint session.</li>
+                    <li><strong>Distance Tracking:</strong> GPS-based tracking with optional interval voice announcements.</li>
+                    <li><strong>Start Commands:</strong> "On your mark → Set → Go" with adjustable or randomized delays.</li>
+                    <li><strong>Finish Line:</strong> Alerts when the target distance is reached.</li>
+                    <li><strong>Session Records:</strong> Save each session’s time, distance, and notes locally for review.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>How to Use</h2>
+                <ol>
+                    <li>Adjust training parameters: command delays, distance reminders, and target distance.</li>
+                    <li>Click "Start" to begin the session; the tool will announce commands and start the timer.</li>
+                    <li>During training, GPS tracks distance and provides voice updates (if enabled).</li>
+                    <li>Save session records after completion to review progress.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Privacy & Data</h2>
+                <p>
+                    Location data is used only to calculate distance. All session records and settings are stored locally on your device. No personal data is shared with third parties.
+                </p>
+            </section>
+
+            <section>
+                <h2>Contact & Support</h2>
+                <p>
+                    For feedback or questions, contact: <a href="mailto:your-email@example.com">your-email@example.com</a>.
+                </p>
+            </section>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Sprint Training Tool</p>
+            <p><a href="privacy.html">Privacy Policy</a> | <a href="index.html">Start Using the Tool</a></p>
+        </footer>
+    </div>
+	
+	<script>
+	document.querySelectorAll('.nav-links a').forEach(link => {
+		if (link.href === window.location.href) {
+			link.classList.add('active');
+		}
+	});
+	</script>
+</body>
+</html>

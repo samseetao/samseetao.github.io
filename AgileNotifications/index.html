@@ -49,7 +49,8 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="switchTab('notifications')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition" title="前往通知設定">
+      <!-- 修正點：點擊鈴鐺測試通知 TAB -->
+      <button onclick="testNotificationFlow()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition" >
         <i data-lucide="bell" class="w-5 h-5"></i>
       </button>
     </div>
@@ -320,7 +321,6 @@
       flexibleRate: null,
       selectedDateFilter: 'today',
       priceFilterMode: 'all',
-      notifiedDates: new Set(),
       chartInstance: null,
       showStandardLine: localStorage.getItem('show_standard_line') !== 'false',
       customLines: JSON.parse(localStorage.getItem('custom_chart_lines') || '[]')
@@ -348,6 +348,13 @@
       const hours = ukDate.getHours();
       const isAfter16 = hours >= 16;
       return { ukDate, hours, isAfter16 };
+    }
+
+    function updateUKClockUI() {
+      const { ukDate } = getUKTimeInfo();
+      const timeStr = `${ukDate.getHours().toString().padStart(2,'0')}:${ukDate.getMinutes().toString().padStart(2,'0')}`;
+      const clockEl = document.getElementById('ukTimeClock');
+      if (clockEl) clockEl.innerText = `UK Time: ${timeStr}`;
     }
 
     async function fetchFlexibleBenchmark() {
@@ -467,14 +474,14 @@
 
       const datasets = [];
 
-      // 1. Standard 基準線 (根據開關選擇)
+      // 1. Standard 基準線
       if (state.showStandardLine) {
         const stdValue = state.flexibleRate || 24.5;
         datasets.push({
           type: 'line',
           label: 'Standard',
           data: new Array(todayRates.length).fill(stdValue),
-          borderColor: '#38bdf8', // Sky 400
+          borderColor: '#38bdf8',
           borderWidth: 2,
           borderDash: [4, 4],
           pointRadius: 0,
@@ -483,7 +490,7 @@
         });
       }
 
-      // 2. 使用者自訂虛線
+      // 2. 自訂虛線
       state.customLines.forEach(line => {
         datasets.push({
           type: 'line',
@@ -498,7 +505,7 @@
         });
       });
 
-      // 3. 柱狀圖數據集
+      // 3. 柱狀圖
       datasets.push({
         type: 'bar',
         label: 'p/kWh',
@@ -584,8 +591,8 @@
     }
 
     function setupRatesTabFilter() {
-      const { ukDate, isAfter16 } = getUKTimeInfo();
-      document.getElementById('ukTimeClock').innerText = `UK Time: ${ukDate.getHours().toString().padStart(2,'0')}:${ukDate.getMinutes().toString().padStart(2,'0')}`;
+      const { isAfter16 } = getUKTimeInfo();
+      updateUKClockUI();
 
       const filterGroup = document.getElementById('dateFilterGroup');
       filterGroup.innerHTML = '';
@@ -663,7 +670,6 @@
       let filtered = state.agileRates.filter(r => isSameDay(r.from, targetDate));
       const stdRate = state.flexibleRate || 24.50;
 
-      // 篩選邏輯：增加高於與低於 Standard
       if (state.priceFilterMode === 'below_std') {
         filtered = filtered.filter(r => r.value < stdRate);
       } else if (state.priceFilterMode === 'above_std') {
@@ -835,6 +841,7 @@
       });
     }
 
+    // 點擊「測試發送通知」按鈕觸發
     function testNotificationFlow() {
       if (!("Notification" in window)) return alert("此瀏覽器不支援通知 API");
 
@@ -846,21 +853,29 @@
             alert("目前通知總開關為「關閉」狀態，請先開啟開關！");
             return;
           }
-          triggerNotificationTest(rules);
+          sendNotificationPayload(rules, null); // 傳入 null 表示檢測「未來所有時段」
         } else {
           alert("通知權限未開啟或被拒絕，請至瀏覽器設定中開啟。");
         }
       });
     }
 
-    function triggerNotificationTest(rules) {
+    // 修正點：新增 targetDate 支援。若傳入特定日期（例如明日），會專門篩選該日期的電價
+    function sendNotificationPayload(rules, targetDate = null) {
       const now = new Date();
-      const testRates = state.agileRates.filter(r => r.from >= now); 
-      let bodyText = `⚡ [區域 ${state.notifRegion}] 16:00 電價提醒：\n`;
+      let targetRates = [];
+
+      if (targetDate) {
+        targetRates = state.agileRates.filter(r => isSameDay(r.from, targetDate));
+      } else {
+        targetRates = state.agileRates.filter(r => r.from >= now);
+      }
+
+      let bodyText = `⚡ [區域 ${state.notifRegion}] 電價提醒：\n`;
 
       [rules.rule1, rules.rule2].forEach((rule, idx) => {
         if (!rule.active) return;
-        const matched = testRates.filter(r => rule.op === 'lt' ? r.value < rule.val : r.value <= rule.val);
+        const matched = targetRates.filter(r => rule.op === 'lt' ? r.value < rule.val : r.value <= rule.val);
         const symbol = rule.op === 'lt' ? '<' : '<=';
         bodyText += `\n條件 ${idx+1} (${symbol} ${rule.val}p): 共 ${matched.length} 個時段`;
         if (matched.length > 0) {
@@ -869,16 +884,16 @@
       });
 
       try {
-        new Notification(`Agile Monitor (${state.notifRegion} 區) 通知測試`, {
+        new Notification(`Agile Monitor (${state.notifRegion} 區) 通知`, {
           body: bodyText,
           icon: "https://octopus.energy/static/site/img/favicon.ico"
         });
-        alert("設定已儲存！已發送測試通知。");
       } catch (e) {
         console.error(e);
       }
     }
 
+    // 英國時間 16:00 自動推播檢查
     function checkAndTrigger1600Notification() {
       const rules = saveNotifRules();
       if (!rules.enabled) return;
@@ -887,14 +902,18 @@
       const { ukDate, isAfter16 } = getUKTimeInfo();
       const todayStr = ukDate.toISOString().split('T')[0];
 
-      if (isAfter16 && !state.notifiedDates.has(todayStr)) {
+      // 從 localStorage 讀取已通知過的日期，防止當天重複觸發
+      const notifiedDates = JSON.parse(localStorage.getItem('notified_dates') || '[]');
+
+      if (isAfter16 && !notifiedDates.includes(todayStr)) {
         const tomorrow = new Date(ukDate);
         tomorrow.setDate(tomorrow.getDate() + 1);
         const tomorrowRates = state.agileRates.filter(r => isSameDay(r.from, tomorrow));
 
         if (tomorrowRates.length > 0) {
-          triggerNotificationTest(rules);
-          state.notifiedDates.add(todayStr);
+          sendNotificationPayload(rules, tomorrow); // 修正點：傳入明日日期進行比對
+          notifiedDates.push(todayStr);
+          localStorage.setItem('notified_dates', JSON.stringify(notifiedDates));
         }
       }
     }
@@ -921,7 +940,9 @@
       await fetchAgileRates();
     }
 
+    // 輪詢與時間時鐘更新
     setInterval(checkAndTrigger1600Notification, 300000);
+    setInterval(updateUKClockUI, 10000); // 修正點：每 10 秒即時更新頁面 UK 時計
 
     lucide.createIcons();
     initData();

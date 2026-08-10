@@ -3,9 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Agile Octopus 電費監控與通知</title>
+  <title>Agile Octopus 電費監控與規劃</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -15,23 +18,39 @@
 </head>
 <body class="h-full flex flex-col font-sans antialiased">
 
-  <!-- 頁首 -->
+  <!-- 頁首 Header -->
   <header class="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-400 flex items-center justify-center text-slate-950 font-bold">
+    <div class="flex items-center gap-2.5">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-emerald-400 flex items-center justify-center text-slate-950 font-bold shrink-0">
         <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
       </div>
       <div>
         <h1 class="text-base font-bold leading-tight">Agile Monitor</h1>
-        <p class="text-xs text-slate-400" id="regionLabel">區域: G (North West)</p>
+        <!-- 區域選擇下拉選單 -->
+        <div class="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+          <span>區域:</span>
+          <select id="regionLabel" onchange="changeRegion(this.value)" class="bg-transparent text-amber-400 font-medium focus:outline-none focus:bg-slate-800 rounded px-1 -ml-1 cursor-pointer border-b border-dashed border-amber-400/40">
+            <option value="A" class="bg-slate-900 text-slate-100">A - Eastern England</option>
+            <option value="B" class="bg-slate-900 text-slate-100">B - East Midlands</option>
+            <option value="C" class="bg-slate-900 text-slate-100">C - London</option>
+            <option value="D" class="bg-slate-900 text-slate-100">D - Merseyside & N Wales</option>
+            <option value="E" class="bg-slate-900 text-slate-100">E - West Midlands</option>
+            <option value="F" class="bg-slate-900 text-slate-100">F - North East England</option>
+            <option value="G" class="bg-slate-900 text-slate-100">G - North West England</option>
+            <option value="H" class="bg-slate-900 text-slate-100">H - Southern England</option>
+            <option value="J" class="bg-slate-900 text-slate-100">J - South Eastern England</option>
+            <option value="K" class="bg-slate-900 text-slate-100">K - South Wales</option>
+            <option value="L" class="bg-slate-900 text-slate-100">L - South West England</option>
+            <option value="M" class="bg-slate-900 text-slate-100">M - Yorkshire</option>
+            <option value="N" class="bg-slate-900 text-slate-100">N - Southern Scotland</option>
+            <option value="P" class="bg-slate-900 text-slate-100">P - Northern Scotland</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <button onclick="requestNotificationPermission()" id="btnHeaderNotif" class="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-amber-400 transition" title="通知設定">
+      <button onclick="switchTab('notifications')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition" title="前往通知設定">
         <i data-lucide="bell" class="w-5 h-5"></i>
-      </button>
-      <button onclick="switchTab('settings')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
-        <i data-lucide="settings" class="w-5 h-5"></i>
       </button>
     </div>
   </header>
@@ -39,7 +58,7 @@
   <!-- 主要內容區 -->
   <main class="flex-1 overflow-y-auto no-scrollbar p-4 max-w-2xl w-full mx-auto pb-24">
 
-    <!-- TAB 1: 概覽 -->
+    <!-- TAB 1: 概覽 Overview -->
     <div id="tab-overview" class="tab-content space-y-4">
       <div class="p-5 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 shadow-xl relative">
         <div class="flex justify-between items-start mb-2">
@@ -48,25 +67,23 @@
             即時電費 (AGILE-24-10-01)
           </span>
           <span id="flexibleBenchmark" class="text-[11px] bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full border border-slate-700 font-medium">
-            Standard: -- p
+            Standard: 載入中...
           </span>
         </div>
 
-        <!-- 小數點顯示兩位 -->
         <div class="flex items-baseline gap-2 my-1">
           <span id="currentRate" class="text-5xl font-black tracking-tight text-emerald-400">--.--</span>
           <span class="text-xl text-slate-400 font-semibold">p/kWh</span>
         </div>
 
         <div class="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs">
-          <span id="currentRateStatus" class="text-slate-300">資料載入中...</span>
-          <span id="notifStatusBadge" class="px-2 py-0.5 rounded-md font-bold bg-slate-800 text-slate-400">
-            通知未啟動
+          <span id="currentRateStatus" class="text-slate-300">資料更新中...</span>
+          <span id="savingsTag" class="px-2 py-0.5 rounded-md font-bold bg-emerald-500/20 text-emerald-400 hidden">
+            -0.00% vs Flexible
           </span>
         </div>
       </div>
 
-      <!-- 最低與最高電價 (小數點兩位) -->
       <div class="grid grid-cols-2 gap-3">
         <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
           <div class="text-xs text-slate-400 mb-1">今日最低電價</div>
@@ -74,20 +91,48 @@
           <div id="todayMinTime" class="text-[11px] text-slate-400 mt-1">時段: --:--</div>
         </div>
         <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
-          <div class="text-xs text-slate-400 mb-1">今日最高電價</div>
+          <div class="text-xs text-slate-400 mb-1">今日最高電價 (尖峰)</div>
           <div id="todayMaxRate" class="text-xl font-bold text-rose-400">--.-- p</div>
           <div id="todayMaxTime" class="text-[11px] text-slate-400 mt-1">時段: --:--</div>
         </div>
       </div>
 
-      <!-- 圖表 -->
-      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
-        <div class="flex justify-between items-center mb-1">
-          <h3 class="text-xs font-bold text-slate-300">今日 24 小時電價圖表 (p/kWh)</h3>
-          <span class="text-[10px] text-slate-500">48 個時段</span>
+      <!-- 圖表與參考線管理區塊 -->
+      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-xs font-bold text-slate-300">今日 24 小時電價圖表 (00:00 - 23:30)</h3>
+          <span class="text-[10px] text-slate-400 flex items-center gap-2">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>最低</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>最高</span>
+          </span>
         </div>
+
         <div class="h-48 w-full">
           <canvas id="ratesChart"></canvas>
+        </div>
+
+        <!-- 參考線對比控制選項 -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="font-bold text-slate-300 flex items-center gap-1">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-amber-400"></i>
+              圖表參考虛線 (Dashed Lines)
+            </span>
+            <label class="flex items-center gap-1.5 cursor-pointer text-slate-400 hover:text-slate-200">
+              <input type="checkbox" id="showStandardLine" checked onchange="toggleStandardLine(this.checked)" class="accent-amber-500 rounded">
+              <span>顯示 Standard 線</span>
+            </label>
+          </div>
+
+          <!-- 自訂線條列表與新增區 -->
+          <div id="customLinesContainer" class="space-y-1.5"></div>
+
+          <div class="flex items-center gap-2 pt-1 text-xs">
+            <input type="text" id="newLineName" placeholder="線條名稱 (例: 充電)" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 flex-1 focus:outline-none">
+            <input type="number" id="newLineVal" placeholder="p/kWh" step="0.5" class="bg-slate-800 border border-slate-700 rounded px-2 py-1 text-slate-200 w-20 focus:outline-none">
+            <input type="color" id="newLineColor" value="#38bdf8" class="w-7 h-7 bg-slate-800 border border-slate-700 rounded cursor-pointer p-0.5">
+            <button onclick="addCustomLine()" class="px-2.5 py-1 bg-amber-500 text-slate-950 font-bold rounded hover:bg-amber-400 transition">新增</button>
+          </div>
         </div>
       </div>
     </div>
@@ -99,116 +144,150 @@
         <span id="ukTimeClock" class="font-mono text-amber-400 font-bold">UK Time: --:--</span>
       </div>
 
-      <!-- 第一排：日期選擇 -->
       <div>
-        <div class="text-[11px] text-slate-400 mb-1 font-medium">日期選擇：</div>
+        <div class="text-[11px] text-slate-400 mb-1 font-medium">選擇日期區間：</div>
         <div class="flex gap-2 text-xs" id="dateFilterGroup"></div>
       </div>
 
-      <!-- 第二排：自訂條件篩選 (含 lt, lte, gt, gte) -->
       <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-        <div class="text-[11px] text-slate-400 font-medium">電費條件篩選：</div>
+        <div class="text-[11px] text-slate-400 font-medium">電費類別篩選：</div>
         
-        <!-- 快速捷徑 -->
-        <div class="flex gap-2 text-xs">
-          <button onclick="setQuickFilter('all')" id="btn-filter-all" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition">全部</button>
-          <button onclick="setQuickFilter('negative')" id="btn-filter-neg" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition">負電費 (< 0.00p)</button>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <button onclick="setPriceFilterMode('all')" id="btn-mode-all" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition">全部顯示</button>
+          <button onclick="setPriceFilterMode('below_std')" id="btn-mode-below-std" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">低於 Standard</button>
+          <button onclick="setPriceFilterMode('above_std')" id="btn-mode-above-std" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">高於 Standard</button>
+          <button onclick="setPriceFilterMode('negative')" id="btn-mode-neg" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">負電費 (&lt;0p)</button>
+          <button onclick="setPriceFilterMode('custom')" id="btn-mode-custom" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition">自訂條件</button>
         </div>
 
-        <!-- 自訂邏輯運算子 -->
-        <div class="flex items-center gap-2 pt-1 border-t border-slate-800/80">
-          <span class="text-xs text-slate-400 whitespace-nowrap">自訂條件:</span>
-          <select id="customOp" onchange="applyCustomFilter()" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
-            <option value="lt">小於 (<)</option>
-            <option value="lte">小於等於 (<=)</option>
-            <option value="gt">大於 (>)</option>
-            <option value="gte">大於等於 (>=)</option>
+        <div id="customFilterBlock" class="hidden pt-2 border-t border-slate-800 flex items-center gap-2">
+          <select id="customOperator" onchange="renderRatesList()" class="bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 focus:outline-none">
+            <option value="lt">小於 (&lt;)</option>
+            <option value="lte">小於或等於 (&le;)</option>
+            <option value="gt">大於 (&gt;)</option>
+            <option value="gte">大於或等於 (&ge;)</option>
           </select>
-          <input type="number" id="customVal" value="10.00" step="0.5" oninput="applyCustomFilter()" class="w-20 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 text-center">
-          <span class="text-xs text-slate-400">p</span>
+          <input type="number" id="customThreshold" value="10.00" step="0.5" oninput="renderRatesList()" class="w-24 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-100 focus:outline-none">
+          <span class="text-xs text-slate-400">p/kWh</span>
         </div>
       </div>
 
-      <!-- 列表 -->
-      <div id="ratesList" class="space-y-2 max-h-[420px] overflow-y-auto no-scrollbar pt-1"></div>
+      <div id="ratesList" class="space-y-2 max-h-[480px] overflow-y-auto no-scrollbar pt-1"></div>
     </div>
 
-    <!-- TAB 3: 規劃 Planner -->
+    <!-- TAB 3: 智慧規劃 Smart Planner -->
     <div id="tab-planner" class="tab-content hidden space-y-4">
+      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
+        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+          <i data-lucide="help-circle" class="w-4 h-4"></i>
+          智慧運轉時間規劃
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          自動尋找未來連續時間內「平均電費最低」的最佳開始時段！
+        </p>
+      </div>
+
       <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-        <h2 class="text-xs font-bold text-slate-300">選擇家電運轉時間</h2>
+        <h2 class="text-xs font-bold text-slate-300">選擇家電持續運轉時間</h2>
         <div class="grid grid-cols-3 gap-2">
           <button onclick="calculatePlanner(1)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">1 小時<br><span class="text-slate-400 font-normal">洗衣機</span></button>
-          <button onclick="calculatePlanner(2)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">2 小時<br><span class="text-slate-400 font-normal">洗碗機</span></button>
+          <button onclick="calculatePlanner(2)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">2 小時<br><span class="text-slate-400 font-normal">烘衣機/洗碗機</span></button>
           <button onclick="calculatePlanner(4)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">4 小時<br><span class="text-slate-400 font-normal">EV 充電</span></button>
         </div>
       </div>
+
       <div id="plannerResult" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 hidden space-y-1.5"></div>
     </div>
 
-    <!-- TAB 4: 設定 Settings (配電區域 + 2組通知條件) -->
-    <div id="tab-settings" class="tab-content hidden space-y-4">
-      
-      <!-- 區域選擇 -->
-      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-        <h2 class="text-sm font-bold text-slate-200">配電區域設定</h2>
-        <select id="regionSelect" onchange="changeRegion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100">
-          <option value="G" selected>Region G - North West England</option>
-          <option value="C">Region C - London</option>
-          <option value="A">Region A - Eastern England</option>
-        </select>
-      </div>
-
-      <!-- 推播通知設定 (最多2組) -->
+    <!-- TAB 4: 通知設定 Notifications -->
+    <div id="tab-notifications" class="tab-content hidden space-y-4">
       <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
           <div>
-            <h2 class="text-sm font-bold text-slate-200">每日 16:00 推播通知中心</h2>
-            <p class="text-xs text-slate-400">當新電價發布或滿足條件時自動提醒</p>
+            <h2 class="text-sm font-bold text-slate-200">每日 16:00 電價推播</h2>
+            <p class="text-xs text-slate-400">當明日新電價發布時自動檢測提醒</p>
           </div>
-          <button onclick="requestNotificationPermission()" class="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-xl font-bold text-xs">
-            啟用/測試通知
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="notif-master-switch" onchange="toggleMasterNotif(this.checked)" class="sr-only peer">
+            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+          </label>
+        </div>
+
+        <div id="notif-status-card" class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span id="notif-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+            <span id="notif-status-text" class="text-slate-300">目前通知狀態: 讀取中...</span>
+          </div>
+          <button onclick="requestNotifPermission()" id="btn-request-perm" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition">
+            要求授權
           </button>
         </div>
 
-        <!-- 條件 1 -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-300 flex items-center gap-1">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i>
+            通知固定區域設定：
+          </label>
+          <select id="notif-region-select" onchange="updateNotifRegion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400">
+            <option value="A">A - Eastern England</option>
+            <option value="B">B - East Midlands</option>
+            <option value="C">C - London</option>
+            <option value="D">D - Merseyside & N Wales</option>
+            <option value="E">E - West Midlands</option>
+            <option value="F">F - North East England</option>
+            <option value="G">G - North West England</option>
+            <option value="H">H - Southern England</option>
+            <option value="J">J - South Eastern England</option>
+            <option value="K">K - South Wales</option>
+            <option value="L">L - South West England</option>
+            <option value="M">M - Yorkshire</option>
+            <option value="N">N - Southern Scotland</option>
+            <option value="P">P - Northern Scotland</option>
+          </select>
+          <p class="text-[10px] text-slate-500">此設定決定推播通知計算觸發條件時使用的地區電價數據。</p>
+        </div>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+        <h3 class="text-xs font-bold text-slate-300">設定提醒條件 (最多 2 組)</h3>
+
         <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
           <div class="flex justify-between items-center">
             <span class="text-xs font-bold text-amber-400">通知條件 1</span>
-            <input type="checkbox" id="rule1-active" checked onchange="saveNotifRules()" class="w-4 h-4 accent-amber-500">
+            <input type="checkbox" id="rule1-active" onchange="saveNotifRules()" class="w-4 h-4 accent-amber-500">
           </div>
           <div class="flex items-center gap-2 text-xs">
             <span class="text-slate-300">電價</span>
             <select id="rule1-op" onchange="saveNotifRules()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200">
-              <option value="lt">小於 (<)</option>
-              <option value="lte">小於等於 (<=)</option>
+              <option value="lt">小於 (&lt;)</option>
+              <option value="lte">小於等於 (&le;)</option>
             </select>
             <input type="number" id="rule1-val" value="0.00" step="0.5" onchange="saveNotifRules()" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center text-slate-200">
             <span class="text-slate-300">p/kWh 時提醒</span>
           </div>
         </div>
 
-        <!-- 條件 2 -->
         <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-2">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-amber-400">通知條件 2 (最多設定兩組)</span>
-            <input type="checkbox" id="rule2-active" checked onchange="saveNotifRules()" class="w-4 h-4 accent-amber-500">
+            <span class="text-xs font-bold text-amber-400">通知條件 2</span>
+            <input type="checkbox" id="rule2-active" onchange="saveNotifRules()" class="w-4 h-4 accent-amber-500">
           </div>
           <div class="flex items-center gap-2 text-xs">
             <span class="text-slate-300">電價</span>
             <select id="rule2-op" onchange="saveNotifRules()" class="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200">
-              <option value="lt">小於 (<)</option>
-              <option value="lte">小於等於 (<=)</option>
+              <option value="lt">小於 (&lt;)</option>
+              <option value="lte">小於等於 (&le;)</option>
             </select>
             <input type="number" id="rule2-val" value="5.00" step="0.5" onchange="saveNotifRules()" class="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-center text-slate-200">
             <span class="text-slate-300">p/kWh 時提醒</span>
           </div>
         </div>
 
+        <button onclick="testNotificationFlow()" class="w-full py-2.5 bg-amber-500 text-slate-950 rounded-xl font-bold text-xs hover:bg-amber-400 transition">
+          測試發送通知
+        </button>
       </div>
-
     </div>
-
   </main>
 
   <!-- 底部導覽列 -->
@@ -226,9 +305,9 @@
         <i data-lucide="zap" class="w-5 h-5 mb-0.5"></i>
         <span class="text-[10px] font-medium">規劃</span>
       </button>
-      <button onclick="switchTab('settings')" id="nav-settings" class="nav-btn flex flex-col items-center justify-center w-full h-full text-slate-400">
-        <i data-lucide="sliders" class="w-5 h-5 mb-0.5"></i>
-        <span class="text-[10px] font-medium">設定</span>
+      <button onclick="switchTab('notifications')" id="nav-notifications" class="nav-btn flex flex-col items-center justify-center w-full h-full text-slate-400">
+        <i data-lucide="bell" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px] font-medium">通知</span>
       </button>
     </div>
   </nav>
@@ -236,24 +315,55 @@
   <script>
     const state = {
       region: localStorage.getItem('octopus_region') || 'G',
+      notifRegion: localStorage.getItem('octopus_notif_region') || (localStorage.getItem('octopus_region') || 'G'),
       agileRates: [],
+      flexibleRate: null,
       selectedDateFilter: 'today',
-      filterType: 'all', // 'all', 'negative', 'custom'
-      chartInstance: null
+      priceFilterMode: 'all',
+      notifiedDates: new Set(),
+      chartInstance: null,
+      showStandardLine: localStorage.getItem('show_standard_line') !== 'false',
+      customLines: JSON.parse(localStorage.getItem('custom_chart_lines') || '[]')
     };
 
-    lucide.createIcons();
-
-    function switchTab(tabId) {
+    function switchTab(id) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`tab-${id}`).classList.remove('hidden');
 
       document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.remove('text-amber-400');
         btn.classList.add('text-slate-400');
       });
-      document.getElementById(`nav-${tabId}`).classList.add('text-amber-400');
-      document.getElementById(`nav-${tabId}`).classList.remove('text-slate-400');
+      const currentNav = document.getElementById(`nav-${id}`);
+      if (currentNav) {
+        currentNav.classList.add('text-amber-400');
+        currentNav.classList.remove('text-slate-400');
+      }
+    }
+
+    function getUKTimeInfo() {
+      const now = new Date();
+      const ukTimeString = now.toLocaleString("en-US", {timeZone: "Europe/London"});
+      const ukDate = new Date(ukTimeString);
+      const hours = ukDate.getHours();
+      const isAfter16 = hours >= 16;
+      return { ukDate, hours, isAfter16 };
+    }
+
+    async function fetchFlexibleBenchmark() {
+      const url = `https://api.octopus.energy/v1/products/VAR-22-11-01/electricity-tariffs/E-1R-VAR-22-11-01-${state.region}/standard-unit-rates/`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const activeRate = data.results.find(r => r.payment_method === "DIRECT_DEBIT");
+        if (activeRate) {
+          state.flexibleRate = activeRate.value_inc_vat;
+          document.getElementById('flexibleBenchmark').innerText = `Standard: ${state.flexibleRate.toFixed(2)} p`;
+        }
+      } catch (err) {
+        state.flexibleRate = 24.50;
+        document.getElementById('flexibleBenchmark').innerText = `Standard: 24.50 p`;
+      }
     }
 
     async function fetchAgileRates() {
@@ -262,7 +372,7 @@
         const res = await fetch(url);
         const data = await res.json();
         state.agileRates = data.results.map(item => ({
-          value: item.value_inc_vat, // 保持原始精準度
+          value: item.value_inc_vat,
           from: new Date(item.valid_from),
           to: new Date(item.valid_to)
         })).sort((a, b) => a.from - b.from);
@@ -272,6 +382,7 @@
 
       renderOverview();
       setupRatesTabFilter();
+      checkAndTrigger1600Notification();
     }
 
     function generateMockData() {
@@ -284,15 +395,11 @@
         const start = new Date(now.getTime() + i * 30 * 60000);
         const end = new Date(start.getTime() + 30 * 60000);
         const hour = start.getHours();
-        let price = 14.25 + Math.sin(i / 4) * 8.32;
-        if (hour >= 16 && hour < 19) price += 17.85;
-        if (hour >= 2 && hour < 5) price -= 16.50; // 產生負電費
+        let price = 16.42 + Math.sin(i / 4) * 8.35;
+        if (hour >= 16 && hour < 19) price += 18.20;
+        if (hour >= 2 && hour < 5) price -= 18.50;
 
-        rates.push({
-          value: price,
-          from: start,
-          to: end
-        });
+        rates.push({ value: price, from: start, to: end });
       }
       state.agileRates = rates;
     }
@@ -302,19 +409,26 @@
       const now = new Date();
       const currentSlot = state.agileRates.find(r => now >= r.from && now < r.to) || state.agileRates[0];
 
-      // 小數點顯示兩位
-      document.getElementById('currentRate').innerText = currentSlot.value.toFixed(2);
-
       const todayRates = state.agileRates.filter(r => isSameDay(r.from, now));
 
       if (todayRates.length > 0) {
-        let minItem = todayRates[0];
-        let maxItem = todayRates[0];
+        let minVal = Math.min(...todayRates.map(r => r.value));
+        let maxVal = Math.max(...todayRates.map(r => r.value));
 
-        todayRates.forEach(r => {
-          if (r.value < minItem.value) minItem = r;
-          if (r.value > maxItem.value) maxItem = r;
-        });
+        let minItem = todayRates.find(r => r.value === minVal);
+        let maxItem = todayRates.find(r => r.value === maxVal);
+
+        const rateEl = document.getElementById('currentRate');
+        rateEl.innerText = currentSlot.value.toFixed(2);
+        if (currentSlot.value === minVal || currentSlot.value < 0) {
+          rateEl.className = "text-5xl font-black tracking-tight text-emerald-400";
+        } else if (currentSlot.value === maxVal) {
+          rateEl.className = "text-5xl font-black tracking-tight text-rose-500";
+        } else {
+          rateEl.className = "text-5xl font-black tracking-tight text-amber-400";
+        }
+
+        document.getElementById('currentRateStatus').innerText = `時段: ${formatTime(currentSlot.from)} - ${formatTime(currentSlot.to)}`;
 
         document.getElementById('todayMinRate').innerText = `${minItem.value.toFixed(2)} p`;
         document.getElementById('todayMinTime').innerText = `時段: ${formatTime(minItem.from)} - ${formatTime(minItem.to)}`;
@@ -322,89 +436,217 @@
         document.getElementById('todayMaxRate').innerText = `${maxItem.value.toFixed(2)} p`;
         document.getElementById('todayMaxTime').innerText = `時段: ${formatTime(maxItem.from)} - ${formatTime(maxItem.to)}`;
 
-        renderChart(todayRates);
+        renderChart(todayRates, minVal, maxVal);
+        renderCustomLinesUI();
+      }
+
+      if (state.flexibleRate) {
+        const diffPercent = (((currentSlot.value - state.flexibleRate) / state.flexibleRate) * 100).toFixed(1);
+        const savingsTag = document.getElementById('savingsTag');
+        savingsTag.classList.remove('hidden');
+        if (diffPercent <= 0) {
+          savingsTag.className = "px-2 py-0.5 rounded-md font-bold bg-emerald-500/20 text-emerald-400";
+          savingsTag.innerText = `${diffPercent}% vs Flexible`;
+        } else {
+          savingsTag.className = "px-2 py-0.5 rounded-md font-bold bg-rose-500/20 text-rose-400";
+          savingsTag.innerText = `+${diffPercent}% vs Flexible`;
+        }
       }
     }
 
-    function renderChart(todayRates) {
+    function renderChart(todayRates, minVal, maxVal) {
       const ctx = document.getElementById('ratesChart').getContext('2d');
       const labels = todayRates.map(r => formatTime(r.from));
-      const dataValues = todayRates.map(r => Number(r.value.toFixed(2)));
+      const dataValues = todayRates.map(r => r.value.toFixed(2));
+      
       const bgColors = todayRates.map(r => {
-        const h = r.from.getHours();
-        if (r.value < 0) return '#10b981';
-        if (h >= 16 && h < 19) return '#f43f5e';
+        if (r.value === minVal || r.value < 0) return '#10b981';
+        if (r.value === maxVal) return '#f43f5e';
         return '#f59e0b';
+      });
+
+      const datasets = [];
+
+      // 1. Standard 基準線 (根據開關選擇)
+      if (state.showStandardLine) {
+        const stdValue = state.flexibleRate || 24.5;
+        datasets.push({
+          type: 'line',
+          label: 'Standard',
+          data: new Array(todayRates.length).fill(stdValue),
+          borderColor: '#38bdf8', // Sky 400
+          borderWidth: 2,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 1
+        });
+      }
+
+      // 2. 使用者自訂虛線
+      state.customLines.forEach(line => {
+        datasets.push({
+          type: 'line',
+          label: line.name,
+          data: new Array(todayRates.length).fill(line.val),
+          borderColor: line.color,
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+          order: 1
+        });
+      });
+
+      // 3. 柱狀圖數據集
+      datasets.push({
+        type: 'bar',
+        label: 'p/kWh',
+        data: dataValues,
+        backgroundColor: bgColors,
+        borderRadius: 4,
+        order: 2
       });
 
       if (state.chartInstance) state.chartInstance.destroy();
 
       state.chartInstance = new Chart(ctx, {
         type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'p/kWh',
-            data: dataValues,
-            backgroundColor: bgColors,
-            borderRadius: 4
-          }]
-        },
+        data: { labels, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (ctx) => ` 電費: ${ctx.parsed.y.toFixed(2)} p/kWh`
-              }
-            }
-          },
+          plugins: { legend: { display: false } },
           scales: {
-            x: { ticks: { color: '#64748b', font: { size: 9 }, autoSkip: true, maxTicksLimit: 12 } },
+            x: { ticks: { color: '#64748b', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
             y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } }
           }
         }
       });
     }
 
+    function toggleStandardLine(checked) {
+      state.showStandardLine = checked;
+      localStorage.setItem('show_standard_line', checked);
+      renderOverview();
+    }
+
+    function addCustomLine() {
+      const nameInput = document.getElementById('newLineName');
+      const valInput = document.getElementById('newLineVal');
+      const colorInput = document.getElementById('newLineColor');
+
+      const name = nameInput.value.trim() || '自訂線';
+      const val = parseFloat(valInput.value);
+
+      if (isNaN(val)) {
+        alert('請輸入有效的數字金額 (p/kWh)');
+        return;
+      }
+
+      state.customLines.push({ id: Date.now(), name, val, color: colorInput.value });
+      localStorage.setItem('custom_chart_lines', JSON.stringify(state.customLines));
+
+      nameInput.value = '';
+      valInput.value = '';
+
+      renderOverview();
+    }
+
+    function removeCustomLine(id) {
+      state.customLines = state.customLines.filter(l => l.id !== id);
+      localStorage.setItem('custom_chart_lines', JSON.stringify(state.customLines));
+      renderOverview();
+    }
+
+    function renderCustomLinesUI() {
+      const container = document.getElementById('customLinesContainer');
+      container.innerHTML = '';
+
+      document.getElementById('showStandardLine').checked = state.showStandardLine;
+
+      state.customLines.forEach(line => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-slate-800/60 px-2.5 py-1 rounded text-xs";
+        div.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-0.5 rounded" style="background-color: ${line.color}"></span>
+            <span class="text-slate-200 font-medium">${line.name}:</span>
+            <span class="text-amber-400 font-bold">${line.val} p</span>
+          </div>
+          <button onclick="removeCustomLine(${line.id})" class="text-slate-500 hover:text-rose-400 transition">
+            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+      lucide.createIcons();
+    }
+
     function setupRatesTabFilter() {
+      const { ukDate, isAfter16 } = getUKTimeInfo();
+      document.getElementById('ukTimeClock').innerText = `UK Time: ${ukDate.getHours().toString().padStart(2,'0')}:${ukDate.getMinutes().toString().padStart(2,'0')}`;
+
       const filterGroup = document.getElementById('dateFilterGroup');
-      filterGroup.innerHTML = `
-        <button onclick="setDateFilter('yesterday')" id="btn-date-yesterday" class="px-3 py-1.5 rounded-lg transition bg-slate-800 text-slate-300">昨天</button>
-        <button onclick="setDateFilter('today')" id="btn-date-today" class="px-3 py-1.5 rounded-lg transition bg-amber-500 text-slate-950 font-bold">今日</button>
-        <button onclick="setDateFilter('tomorrow')" id="btn-date-tomorrow" class="px-3 py-1.5 rounded-lg transition bg-slate-800 text-slate-300">明日</button>
-      `;
+      filterGroup.innerHTML = '';
+
+      if (!isAfter16) {
+        document.getElementById('ratesRuleNotice').innerText = "未過英國 16:00，顯示昨日與今日電費";
+        filterGroup.innerHTML = `
+          <button onclick="setDateFilter('yesterday')" id="btn-date-yesterday" class="px-3.5 py-1.5 rounded-lg font-medium transition">昨天</button>
+          <button onclick="setDateFilter('today')" id="btn-date-today" class="px-3.5 py-1.5 rounded-lg font-medium transition">今日</button>
+        `;
+      } else {
+        document.getElementById('ratesRuleNotice').innerText = "已過英國 16:00，顯示今日與明日電費";
+        filterGroup.innerHTML = `
+          <button onclick="setDateFilter('today')" id="btn-date-today" class="px-3.5 py-1.5 rounded-lg font-medium transition">今日</button>
+          <button onclick="setDateFilter('tomorrow')" id="btn-date-tomorrow" class="px-3.5 py-1.5 rounded-lg font-medium transition">明日 (新發布)</button>
+        `;
+      }
+
       setDateFilter('today');
     }
 
     function setDateFilter(targetDate) {
       state.selectedDateFilter = targetDate;
+
       ['yesterday', 'today', 'tomorrow'].forEach(d => {
         const btn = document.getElementById(`btn-date-${d}`);
         if (btn) {
           if (d === targetDate) {
-            btn.className = "px-3.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition";
+            btn.className = "px-3.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold shadow-md transition";
           } else {
-            btn.className = "px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition";
+            btn.className = "px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
           }
         }
       });
+
       renderRatesList();
     }
 
-    function setQuickFilter(type) {
-      state.filterType = type;
-      document.getElementById('btn-filter-all').className = type === 'all' ? "px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition";
-      document.getElementById('btn-filter-neg').className = type === 'negative' ? "px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition" : "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition";
-      renderRatesList();
-    }
+    function setPriceFilterMode(mode) {
+      state.priceFilterMode = mode;
+      
+      const modes = ['all', 'below_std', 'above_std', 'neg', 'custom'];
+      modes.forEach(m => {
+        const btn = document.getElementById(`btn-mode-${m.replace('_', '-')}`);
+        if (btn) {
+          btn.className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700 transition";
+        }
+      });
 
-    function applyCustomFilter() {
-      state.filterType = 'custom';
-      document.getElementById('btn-filter-all').className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition";
-      document.getElementById('btn-filter-neg').className = "px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 transition";
+      const activeBtn = document.getElementById(`btn-mode-${mode.replace('_', '-')}`);
+      if (activeBtn) {
+        activeBtn.className = "px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold transition";
+      }
+
+      const customBlock = document.getElementById('customFilterBlock');
+      if (mode === 'custom') {
+        customBlock.classList.remove('hidden');
+      } else {
+        customBlock.classList.add('hidden');
+      }
+
       renderRatesList();
     }
 
@@ -412,30 +654,35 @@
       const now = new Date();
       let targetDate = new Date();
 
-      if (state.selectedDateFilter === 'yesterday') targetDate.setDate(now.getDate() - 1);
-      if (state.selectedDateFilter === 'tomorrow') targetDate.setDate(now.getDate() + 1);
+      if (state.selectedDateFilter === 'yesterday') {
+        targetDate.setDate(now.getDate() - 1);
+      } else if (state.selectedDateFilter === 'tomorrow') {
+        targetDate.setDate(now.getDate() + 1);
+      }
 
       let filtered = state.agileRates.filter(r => isSameDay(r.from, targetDate));
+      const stdRate = state.flexibleRate || 24.50;
 
-      if (state.filterType === 'negative') {
+      // 篩選邏輯：增加高於與低於 Standard
+      if (state.priceFilterMode === 'below_std') {
+        filtered = filtered.filter(r => r.value < stdRate);
+      } else if (state.priceFilterMode === 'above_std') {
+        filtered = filtered.filter(r => r.value > stdRate);
+      } else if (state.priceFilterMode === 'negative') {
         filtered = filtered.filter(r => r.value < 0);
-      } else if (state.filterType === 'custom') {
-        const op = document.getElementById('customOp').value;
-        const val = parseFloat(document.getElementById('customVal').value) || 0;
-        filtered = filtered.filter(r => {
-          if (op === 'lt') return r.value < val;
-          if (op === 'lte') return r.value <= val;
-          if (op === 'gt') return r.value > val;
-          if (op === 'gte') return r.value >= val;
-          return true;
-        });
+      } else if (state.priceFilterMode === 'custom') {
+        const op = document.getElementById('customOperator').value;
+        const val = parseFloat(document.getElementById('customThreshold').value) || 0;
+        filtered = applyRuleFilter(filtered, op, val);
       }
 
       const container = document.getElementById('ratesList');
       container.innerHTML = '';
 
+      const dateTag = state.selectedDateFilter === 'yesterday' ? '[昨日]' : (state.selectedDateFilter === 'today' ? '[今日]' : '[明日]');
+
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">無符合條件之電費時段</div>`;
+        container.innerHTML = `<div class="text-center py-8 text-xs text-slate-500">暫無符合條件的 ${dateTag} 電費數據</div>`;
         return;
       }
 
@@ -443,28 +690,23 @@
         const div = document.createElement('div');
         div.className = "p-3 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center text-sm";
         div.innerHTML = `
-          <span class="text-xs text-slate-300">${formatTime(item.from)} - ${formatTime(item.to)}</span>
-          <span class="font-bold ${item.value < 0 ? 'text-emerald-400' : 'text-slate-200'}">${item.value.toFixed(2)} p/kWh</span>
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">${dateTag}</span>
+            <span class="text-xs text-slate-300">${formatTime(item.from)} - ${formatTime(item.to)}</span>
+          </div>
+          <span class="font-bold ${item.value < 0 ? 'text-emerald-400 animate-pulse' : (item.value > 30 ? 'text-rose-400' : 'text-slate-200')}">${item.value.toFixed(2)} p/kWh</span>
         `;
         container.appendChild(div);
       });
     }
 
-    // 推播通知核心功能
-    function requestNotificationPermission() {
-      if (!("Notification" in window)) {
-        alert("此瀏覽器不支援 Web Notification 推播通知。");
-        return;
-      }
-      Notification.requestPermission().then(permission => {
-        if (permission === "granted") {
-          document.getElementById('notifStatusBadge').innerText = "通知已啟用";
-          document.getElementById('notifStatusBadge').className = "px-2 py-0.5 rounded-md font-bold bg-emerald-500/20 text-emerald-400";
-          new Notification("Agile Monitor 通知已啟用", {
-            body: "已成功開啟每日 16:00 電價自動監測與自訂條件提醒！",
-            icon: "https://cdn-icons-png.flaticon.com/512/3106/3106856.png"
-          });
-        }
+    function applyRuleFilter(rates, op, threshold) {
+      return rates.filter(r => {
+        if (op === 'lt') return r.value < threshold;
+        if (op === 'lte') return r.value <= threshold;
+        if (op === 'gt') return r.value > threshold;
+        if (op === 'gte') return r.value >= threshold;
+        return true;
       });
     }
 
@@ -473,7 +715,10 @@
       const now = new Date();
       const futureRates = state.agileRates.filter(r => r.from >= now);
 
-      if (futureRates.length < slots) return;
+      if (futureRates.length < slots) {
+        alert('未來電費數據不足以計算！');
+        return;
+      }
 
       let minSum = Infinity;
       let bestIndex = 0;
@@ -489,15 +734,175 @@
 
       const start = futureRates[bestIndex].from;
       const end = futureRates[bestIndex + slots - 1].to;
-      const avg = (minSum / slots).toFixed(2); // 精確至小數點兩位
+      const avg = (minSum / slots).toFixed(2);
 
       const resultEl = document.getElementById('plannerResult');
       resultEl.classList.remove('hidden');
       resultEl.innerHTML = `
-        <div class="text-xs text-slate-400">最佳連續 ${hours} 小時運轉建議：</div>
+        <div class="text-xs text-slate-400">最佳 ${hours} 小時連續運轉建議：</div>
         <div class="text-base font-bold text-emerald-400">${formatTime(start)} ~ ${formatTime(end)}</div>
-        <div class="text-xs text-slate-300">平均電價：<span class="font-bold text-amber-400">${avg} p/kWh</span></div>
+        <div class="text-xs text-slate-300">預估平均電價：<span class="font-bold text-amber-400">${avg} p/kWh</span></div>
       `;
+    }
+
+    function syncUI() {
+      const regionSelect = document.getElementById('regionLabel');
+      if (regionSelect) regionSelect.value = state.region;
+
+      const notifRegionSelect = document.getElementById('notif-region-select');
+      if (notifRegionSelect) notifRegionSelect.value = state.notifRegion;
+
+      const saved = JSON.parse(localStorage.getItem('notif_rules') || '{"enabled":true,"rule1":{"active":true,"op":"lt","val":0},"rule2":{"active":true,"op":"lt","val":5}}');
+      
+      document.getElementById('notif-master-switch').checked = saved.enabled !== false;
+      document.getElementById('rule1-active').checked = saved.rule1 ? saved.rule1.active : true;
+      document.getElementById('rule1-op').value = saved.rule1 ? saved.rule1.op : 'lt';
+      document.getElementById('rule1-val').value = saved.rule1 ? saved.rule1.val : 0;
+
+      document.getElementById('rule2-active').checked = saved.rule2 ? saved.rule2.active : true;
+      document.getElementById('rule2-op').value = saved.rule2 ? saved.rule2.op : 'lt';
+      document.getElementById('rule2-val').value = saved.rule2 ? saved.rule2.val : 5;
+
+      updateNotifStatusDisplay();
+    }
+
+    function updateNotifStatusDisplay() {
+      const isMasterEnabled = document.getElementById('notif-master-switch').checked;
+      const dot = document.getElementById('notif-status-dot');
+      const text = document.getElementById('notif-status-text');
+      const btn = document.getElementById('btn-request-perm');
+
+      if (!isMasterEnabled) {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-slate-500";
+        text.innerText = "通知功能已關閉 (開關切換為關)";
+        btn.classList.add('hidden');
+        return;
+      }
+
+      if (!("Notification" in window)) {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        text.innerText = "此瀏覽器不支援 Notification API";
+        btn.classList.add('hidden');
+      } else if (Notification.permission === "granted") {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+        text.innerText = `通知運行中 (固定區域: ${state.notifRegion})`;
+        btn.classList.add('hidden');
+      } else if (Notification.permission === "denied") {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-rose-500";
+        text.innerText = "通知權限被拒絕，請由瀏覽器權限設定開啟";
+        btn.classList.add('hidden');
+      } else {
+        dot.className = "w-2.5 h-2.5 rounded-full bg-amber-400";
+        text.innerText = "尚未取得權限，點擊按鈕授權";
+        btn.classList.remove('hidden');
+      }
+    }
+
+    function toggleMasterNotif(enabled) {
+      saveNotifRules();
+      updateNotifStatusDisplay();
+    }
+
+    function updateNotifRegion(region) {
+      state.notifRegion = region;
+      localStorage.setItem('octopus_notif_region', region);
+      saveNotifRules();
+      updateNotifStatusDisplay();
+    }
+
+    function saveNotifRules() {
+      const rules = {
+        enabled: document.getElementById('notif-master-switch').checked,
+        rule1: {
+          active: document.getElementById('rule1-active').checked,
+          op: document.getElementById('rule1-op').value,
+          val: parseFloat(document.getElementById('rule1-val').value) || 0
+        },
+        rule2: {
+          active: document.getElementById('rule2-active').checked,
+          op: document.getElementById('rule2-op').value,
+          val: parseFloat(document.getElementById('rule2-val').value) || 0
+        }
+      };
+      localStorage.setItem('notif_rules', JSON.stringify(rules));
+      return rules;
+    }
+
+    function requestNotifPermission() {
+      if (!("Notification" in window)) return alert("此瀏覽器不支援通知 API");
+      Notification.requestPermission().then(() => {
+        updateNotifStatusDisplay();
+      });
+    }
+
+    function testNotificationFlow() {
+      if (!("Notification" in window)) return alert("此瀏覽器不支援通知 API");
+
+      Notification.requestPermission().then(permission => {
+        updateNotifStatusDisplay();
+        if (permission === "granted") {
+          const rules = saveNotifRules();
+          if (!rules.enabled) {
+            alert("目前通知總開關為「關閉」狀態，請先開啟開關！");
+            return;
+          }
+          triggerNotificationTest(rules);
+        } else {
+          alert("通知權限未開啟或被拒絕，請至瀏覽器設定中開啟。");
+        }
+      });
+    }
+
+    function triggerNotificationTest(rules) {
+      const now = new Date();
+      const testRates = state.agileRates.filter(r => r.from >= now); 
+      let bodyText = `⚡ [區域 ${state.notifRegion}] 16:00 電價提醒：\n`;
+
+      [rules.rule1, rules.rule2].forEach((rule, idx) => {
+        if (!rule.active) return;
+        const matched = testRates.filter(r => rule.op === 'lt' ? r.value < rule.val : r.value <= rule.val);
+        const symbol = rule.op === 'lt' ? '<' : '<=';
+        bodyText += `\n條件 ${idx+1} (${symbol} ${rule.val}p): 共 ${matched.length} 個時段`;
+        if (matched.length > 0) {
+          bodyText += `\n   👉 首個時段: ${formatTime(matched[0].from)} (${matched[0].value.toFixed(1)}p)`;
+        }
+      });
+
+      try {
+        new Notification(`Agile Monitor (${state.notifRegion} 區) 通知測試`, {
+          body: bodyText,
+          icon: "https://octopus.energy/static/site/img/favicon.ico"
+        });
+        alert("設定已儲存！已發送測試通知。");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function checkAndTrigger1600Notification() {
+      const rules = saveNotifRules();
+      if (!rules.enabled) return;
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+      const { ukDate, isAfter16 } = getUKTimeInfo();
+      const todayStr = ukDate.toISOString().split('T')[0];
+
+      if (isAfter16 && !state.notifiedDates.has(todayStr)) {
+        const tomorrow = new Date(ukDate);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowRates = state.agileRates.filter(r => isSameDay(r.from, tomorrow));
+
+        if (tomorrowRates.length > 0) {
+          triggerNotificationTest(rules);
+          state.notifiedDates.add(todayStr);
+        }
+      }
+    }
+
+    function changeRegion(val) {
+      state.region = val;
+      localStorage.setItem('octopus_region', val);
+      initData();
     }
 
     function isSameDay(d1, d2) {
@@ -510,7 +915,16 @@
       return date.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false });
     }
 
-    fetchAgileRates();
+    async function initData() {
+      syncUI();
+      await fetchFlexibleBenchmark();
+      await fetchAgileRates();
+    }
+
+    setInterval(checkAndTrigger1600Notification, 300000);
+
+    lucide.createIcons();
+    initData();
   </script>
 </body>
 </html>

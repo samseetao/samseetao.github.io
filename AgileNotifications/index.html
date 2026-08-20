@@ -49,8 +49,7 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <!-- 修正點：點擊鈴鐺測試通知 TAB -->
-      <button onclick="testNotificationFlow()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition" >
+      <button onclick="switchTab('notifications')" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 transition" title="前往通知設定">
         <i data-lucide="bell" class="w-5 h-5"></i>
       </button>
     </div>
@@ -63,13 +62,19 @@
     <div id="tab-overview" class="tab-content space-y-4">
       <div class="p-5 rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700/60 shadow-xl relative">
         <div class="flex justify-between items-start mb-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+          <div class="flex items-center gap-1.5">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            即時電費 (AGILE-24-10-01)
-          </span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">即時電費 (AGILE-24-10-01)</span>
+            <i data-lucide="info" onclick="toggleInfo('overview')" class="w-4 h-4 text-amber-400 shrink-0 cursor-pointer hover:text-amber-300 transition ml-0.5" title="切換說明"></i>
+          </div>
           <span id="flexibleBenchmark" class="text-[11px] bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full border border-slate-700 font-medium">
             Standard: 載入中...
           </span>
+        </div>
+
+        <!-- 概覽可摺疊說明 -->
+        <div id="info-overview" class="hidden p-2.5 my-2 border-slate-800 text-xs text-slate-400 border-t">
+          即時掌握目前時段電價、今日最高/最低電費趨勢圖表，並可自訂參考數據線進行對比。
         </div>
 
         <div class="flex items-baseline gap-2 my-1">
@@ -93,7 +98,7 @@
         </div>
         <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
           <div class="text-xs text-slate-400 mb-1">今日最高電價 (尖峰)</div>
-          <div id="todayMaxRate" class="text-xl font-bold text-rose-400">--.-- p</div>
+          <div id="todayMaxRate" class="text-xl font-bold text-rose-500">--.-- p</div>
           <div id="todayMaxTime" class="text-[11px] text-slate-400 mt-1">時段: --:--</div>
         </div>
       </div>
@@ -104,7 +109,7 @@
           <h3 class="text-xs font-bold text-slate-300">今日 24 小時電價圖表 (00:00 - 23:30)</h3>
           <span class="text-[10px] text-slate-400 flex items-center gap-2">
             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span>最低</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>最高</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span>最高/高於30p</span>
           </span>
         </div>
 
@@ -139,12 +144,30 @@
     </div>
 
     <!-- TAB 2: 明細 Rates -->
-    <div id="tab-rates" class="tab-content hidden space-y-3">
-      <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-400 flex justify-between items-center">
-        <span id="ratesRuleNotice">載入時間規則中...</span>
-        <span id="ukTimeClock" class="font-mono text-amber-400 font-bold">UK Time: --:--</span>
-      </div>
+	<div id="tab-rates" class="tab-content hidden space-y-3">
+	  
+	  <!-- 外層主卡片：統一包含標題、時間與展開說明 -->
+	  <div class="p-3.5 bg-slate-900 rounded-xl border border-slate-800 text-xs text-slate-400 flex flex-col justify-center space-y-2">
+		
+		<!-- 上半部：標題與英國時間列 -->
+		<div class="flex justify-between items-center">
+		  <div class="flex items-center gap-1.5">
+			<span id="ratesRuleNotice">載入時間規則中...</span>
+			<i data-lucide="info" onclick="toggleInfo('rates')" class="w-4 h-4 text-amber-400 shrink-0 cursor-pointer hover:text-amber-300 transition" title="切換說明"></i>
+		  </div>
+		  <div>
+			<span id="ukTimeClock" class="font-mono text-amber-400 font-bold">UK Time: --:--</span>
+		  </div>
+		</div>
 
+		<!-- 下半部：展開說明（同在卡片內，不再獨立開卡片） -->
+		<div id="info-rates" class="hidden pt-1.5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60">
+		  提供每 30 分鐘為單位的詳細電價清單，支援多種篩選條件與歷史/最新預告資料查詢。
+		</div>
+
+	  </div>
+
+	  <!-- 選擇日期區間... -->
       <div>
         <div class="text-[11px] text-slate-400 mb-1 font-medium">選擇日期區間：</div>
         <div class="flex gap-2 text-xs" id="dateFilterGroup"></div>
@@ -178,76 +201,108 @@
 
     <!-- TAB 3: 智慧規劃 Smart Planner -->
     <div id="tab-planner" class="tab-content hidden space-y-4">
-      <div class="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2">
-        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
-          <i data-lucide="help-circle" class="w-4 h-4"></i>
-          智慧運轉時間規劃
-        </div>
-        <p class="text-xs text-slate-300 leading-relaxed">
-          自動尋找未來連續時間內「平均電費最低」的最佳開始時段！
-        </p>
-      </div>
-
+      <!-- 時間選擇區：包含快捷按鈕與自訂幾小時幾分鐘 -->
       <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
-        <h2 class="text-xs font-bold text-slate-300">選擇家電持續運轉時間</h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-xs font-bold text-slate-300">快速選擇或自訂運轉時間</h2>
+          <i data-lucide="info" onclick="toggleInfo('planner')" class="w-4 h-4 text-amber-400 shrink-0 cursor-pointer hover:text-amber-300 transition" title="切換說明"></i>
+        </div>
+
+        <!-- 規劃可摺疊說明 -->
+        <div id="info-planner" class="hidden pt-2 border-t border-slate-800/60 text-xs text-slate-400 leading-relaxed">
+          根據家電需要的連續使用時間，自動尋找「今天剩餘時段」與「明天整天」平均電費最低的最佳開始時間！
+        </div>
+
+        <!-- 快捷按鈕 -->
         <div class="grid grid-cols-3 gap-2">
-          <button onclick="calculatePlanner(1)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">1 小時<br><span class="text-slate-400 font-normal">洗衣機</span></button>
-          <button onclick="calculatePlanner(2)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">2 小時<br><span class="text-slate-400 font-normal">烘衣機/洗碗機</span></button>
-          <button onclick="calculatePlanner(4)" class="p-3 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">4 小時<br><span class="text-slate-400 font-normal">EV 充電</span></button>
+          <button onclick="calculatePlanner(1, 0)" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">1 小時<br><span class="text-[10px] text-slate-400 font-normal">洗衣機</span></button>
+          <button onclick="calculatePlanner(2, 0)" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">2 小時<br><span class="text-[10px] text-slate-400 font-normal">烘衣機/洗碗機</span></button>
+          <button onclick="calculatePlanner(4, 0)" class="p-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-semibold text-center hover:bg-slate-700 transition">4 小時<br><span class="text-[10px] text-slate-400 font-normal">EV 充電</span></button>
+        </div>
+
+        <!-- 自訂幾小時幾分鐘 -->
+        <div class="pt-3 border-t border-slate-800 space-y-2">
+          <div class="text-[11px] text-slate-400 font-medium">自訂時間 (最小單位為 30 分鐘):</div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5">
+              <input type="number" id="customHours" min="0" max="24" value="1" class="w-full bg-transparent text-xs font-bold text-amber-400 text-right focus:outline-none">
+              <span class="text-xs text-slate-400">小時</span>
+            </div>
+            <div class="flex-1 flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5">
+              <input type="number" id="customMinutes" min="0" max="59" step="30" value="30" class="w-full bg-transparent text-xs font-bold text-amber-400 text-right focus:outline-none">
+              <span class="text-xs text-slate-400">分鐘</span>
+            </div>
+            <button onclick="triggerCustomPlanner()" class="px-4 py-2 bg-amber-500 text-slate-950 text-xs font-bold rounded-xl hover:bg-amber-400 transition shrink-0">
+              計算
+            </button>
+          </div>
         </div>
       </div>
 
-      <div id="plannerResult" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 hidden space-y-1.5"></div>
+      <div id="plannerResult" class="p-4 rounded-2xl bg-slate-900 border border-slate-800 hidden space-y-3"></div>
     </div>
 
     <!-- TAB 4: 通知設定 Notifications -->
-    <div id="tab-notifications" class="tab-content hidden space-y-4">
-      <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
-        <div class="flex justify-between items-center pb-3 border-b border-slate-800">
-          <div>
-            <h2 class="text-sm font-bold text-slate-200">每日 16:00 電價推播</h2>
-            <p class="text-xs text-slate-400">當明日新電價發布時自動檢測提醒</p>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="notif-master-switch" onchange="toggleMasterNotif(this.checked)" class="sr-only peer">
-            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-          </label>
-        </div>
+	<div id="tab-notifications" class="tab-content hidden space-y-4">
+	  <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+		
+		<!-- 標題列 + 開關 (標題與切換開關保持左右分開) -->
+		<div class="flex justify-between items-center pb-3 border-slate-800">
+		  <div>
+			<div class="flex items-center gap-2">
+			  <h2 class="text-sm font-bold text-slate-200">每日 16:00 電價推播</h2>
+			  <i data-lucide="info" onclick="toggleInfo('notifications')" class="w-4 h-4 text-amber-400 shrink-0 cursor-pointer hover:text-amber-300 transition" title="切換說明"></i>
+			</div>
+			<p class="text-xs text-slate-400 mt-0.5">當明日新電價發布時自動檢測提醒</p>
+		  </div>
+		  <label class="relative inline-flex items-center cursor-pointer shrink-0">
+			<input type="checkbox" id="notif-master-switch" onchange="toggleMasterNotif(this.checked)" class="sr-only peer">
+			<div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+		  </label>
+		</div>
 
-        <div id="notif-status-card" class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span id="notif-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
-            <span id="notif-status-text" class="text-slate-300">目前通知狀態: 讀取中...</span>
-          </div>
-          <button onclick="requestNotifPermission()" id="btn-request-perm" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition">
-            要求授權
-          </button>
-        </div>
+		<!-- 通知可摺疊說明 (獨立在標題列下方，加上 hidden 預設隱藏) -->
+		<div id="info-notifications" class="hidden pt-2 border-t border-slate-800/60 text-xs text-slate-400 leading-relaxed">
+		  設定每日 16:00 發布新電價時的自動推播條件，當出現超低電價或負電價時即時接收通知。
+		</div>
 
-        <div class="space-y-1.5">
-          <label class="text-xs font-bold text-slate-300 flex items-center gap-1">
-            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i>
-            通知固定區域設定：
-          </label>
-          <select id="notif-region-select" onchange="updateNotifRegion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400">
-            <option value="A">A - Eastern England</option>
-            <option value="B">B - East Midlands</option>
-            <option value="C">C - London</option>
-            <option value="D">D - Merseyside & N Wales</option>
-            <option value="E">E - West Midlands</option>
-            <option value="F">F - North East England</option>
-            <option value="G">G - North West England</option>
-            <option value="H">H - Southern England</option>
-            <option value="J">J - South Eastern England</option>
-            <option value="K">K - South Wales</option>
-            <option value="L">L - South West England</option>
-            <option value="M">M - Yorkshire</option>
-            <option value="N">N - Southern Scotland</option>
-            <option value="P">P - Northern Scotland</option>
-          </select>
-          <p class="text-[10px] text-slate-500">此設定決定推播通知計算觸發條件時使用的地區電價數據。</p>
-        </div>
-      </div>
+		<!-- 狀態卡片 -->
+		<div id="notif-status-card" class="p-3 rounded-xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-between text-xs">
+		  <div class="flex items-center gap-2">
+			<span id="notif-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+			<span id="notif-status-text" class="text-slate-300">目前通知狀態: 讀取中...</span>
+		  </div>
+		  <button onclick="requestNotifPermission()" id="btn-request-perm" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition">
+			要求授權
+		  </button>
+		</div>
+
+		<!-- 區域選擇 -->
+		<div class="space-y-1.5 pt-1">
+		  <label class="text-xs font-bold text-slate-300 flex items-center gap-1">
+			<i data-lucide="map-pin" class="w-3.5 h-3.5 text-amber-400"></i>
+			通知固定區域設定：
+		  </label>
+		  <select id="notif-region-select" onchange="updateNotifRegion(this.value)" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400">
+			<option value="A">A - Eastern England</option>
+			<option value="B">B - East Midlands</option>
+			<option value="C">C - London</option>
+			<option value="D">D - Merseyside & N Wales</option>
+			<option value="E">E - West Midlands</option>
+			<option value="F">F - North East England</option>
+			<option value="G">G - North West England</option>
+			<option value="H">H - Southern England</option>
+			<option value="J">J - South Eastern England</option>
+			<option value="K">K - South Wales</option>
+			<option value="L">L - South West England</option>
+			<option value="M">M - Yorkshire</option>
+			<option value="N">N - Southern Scotland</option>
+			<option value="P">P - Northern Scotland</option>
+		  </select>
+		  <p class="text-[10px] text-slate-500">此設定決定推播通知計算觸發條件時使用的地區電價數據。</p>
+		</div>
+	  </div>
+
 
       <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
         <h3 class="text-xs font-bold text-slate-300">設定提醒條件 (最多 2 組)</h3>
@@ -325,6 +380,14 @@
       showStandardLine: localStorage.getItem('show_standard_line') !== 'false',
       customLines: JSON.parse(localStorage.getItem('custom_chart_lines') || '[]')
     };
+
+    // 控制說明區塊展開/收起
+    function toggleInfo(tabKey) {
+      const el = document.getElementById(`info-${tabKey}`);
+      if (el) {
+        el.classList.toggle('hidden');
+      }
+    }
 
     function switchTab(id) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -427,10 +490,11 @@
 
         const rateEl = document.getElementById('currentRate');
         rateEl.innerText = currentSlot.value.toFixed(2);
-        if (currentSlot.value === minVal || currentSlot.value < 0) {
-          rateEl.className = "text-5xl font-black tracking-tight text-emerald-400";
-        } else if (currentSlot.value === maxVal) {
+        
+        if (currentSlot.value > 30) {
           rateEl.className = "text-5xl font-black tracking-tight text-rose-500";
+        } else if (currentSlot.value === minVal || currentSlot.value < 0) {
+          rateEl.className = "text-5xl font-black tracking-tight text-emerald-400";
         } else {
           rateEl.className = "text-5xl font-black tracking-tight text-amber-400";
         }
@@ -455,7 +519,7 @@
           savingsTag.className = "px-2 py-0.5 rounded-md font-bold bg-emerald-500/20 text-emerald-400";
           savingsTag.innerText = `${diffPercent}% vs Flexible`;
         } else {
-          savingsTag.className = "px-2 py-0.5 rounded-md font-bold bg-rose-500/20 text-rose-400";
+          savingsTag.className = "px-2 py-0.5 rounded-md font-bold bg-rose-500/20 text-rose-500";
           savingsTag.innerText = `+${diffPercent}% vs Flexible`;
         }
       }
@@ -467,14 +531,13 @@
       const dataValues = todayRates.map(r => r.value.toFixed(2));
       
       const bgColors = todayRates.map(r => {
+        if (r.value > 30 || r.value === maxVal) return '#f43f5e';
         if (r.value === minVal || r.value < 0) return '#10b981';
-        if (r.value === maxVal) return '#f43f5e';
         return '#f59e0b';
       });
 
       const datasets = [];
 
-      // 1. Standard 基準線
       if (state.showStandardLine) {
         const stdValue = state.flexibleRate || 24.5;
         datasets.push({
@@ -490,7 +553,6 @@
         });
       }
 
-      // 2. 自訂虛線
       state.customLines.forEach(line => {
         datasets.push({
           type: 'line',
@@ -505,7 +567,6 @@
         });
       });
 
-      // 3. 柱狀圖
       datasets.push({
         type: 'bar',
         label: 'p/kWh',
@@ -695,12 +756,22 @@
       filtered.forEach(item => {
         const div = document.createElement('div');
         div.className = "p-3 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center text-sm";
+        
+        let priceColorClass = 'text-slate-200';
+        if (item.value > 30) {
+          priceColorClass = 'text-rose-500 font-black';
+        } else if (item.value < 0) {
+          priceColorClass = 'text-emerald-400 animate-pulse font-bold';
+        } else {
+          priceColorClass = 'text-slate-200 font-bold';
+        }
+
         div.innerHTML = `
           <div class="flex items-center gap-2">
             <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">${dateTag}</span>
             <span class="text-xs text-slate-300">${formatTime(item.from)} - ${formatTime(item.to)}</span>
           </div>
-          <span class="font-bold ${item.value < 0 ? 'text-emerald-400 animate-pulse' : (item.value > 30 ? 'text-rose-400' : 'text-slate-200')}">${item.value.toFixed(2)} p/kWh</span>
+          <span class="${priceColorClass}">${item.value.toFixed(2)} p/kWh</span>
         `;
         container.appendChild(div);
       });
@@ -716,39 +787,104 @@
       });
     }
 
-    function calculatePlanner(hours) {
-      const slots = hours * 2;
-      const now = new Date();
-      const futureRates = state.agileRates.filter(r => r.from >= now);
-
-      if (futureRates.length < slots) {
-        alert('未來電費數據不足以計算！');
-        return;
-      }
-
+    function findBestWindow(rateList, slots) {
+      if (rateList.length < slots) return null;
       let minSum = Infinity;
-      let bestIndex = 0;
+      let bestIndex = -1;
 
-      for (let i = 0; i <= futureRates.length - slots; i++) {
+      for (let i = 0; i <= rateList.length - slots; i++) {
         let sum = 0;
-        for (let j = 0; j < slots; j++) sum += futureRates[i+j].value;
+        for (let j = 0; j < slots; j++) sum += rateList[i + j].value;
         if (sum < minSum) {
           minSum = sum;
           bestIndex = i;
         }
       }
 
-      const start = futureRates[bestIndex].from;
-      const end = futureRates[bestIndex + slots - 1].to;
-      const avg = (minSum / slots).toFixed(2);
+      if (bestIndex === -1) return null;
+      return {
+        start: rateList[bestIndex].from,
+        end: rateList[bestIndex + slots - 1].to,
+        avg: (minSum / slots).toFixed(2)
+      };
+    }
+
+    function triggerCustomPlanner() {
+      const h = parseInt(document.getElementById('customHours').value) || 0;
+      const m = parseInt(document.getElementById('customMinutes').value) || 0;
+
+      if (h === 0 && m === 0) {
+        alert("請輸入至少 30 分鐘以上的運轉時間");
+        return;
+      }
+
+      calculatePlanner(h, m);
+    }
+
+    function calculatePlanner(hours, minutes = 0) {
+      const totalMinutes = (hours * 60) + minutes;
+      const slots = Math.ceil(totalMinutes / 30);
+
+      if (slots <= 0) return;
+
+      let durationLabel = '';
+      if (hours > 0) durationLabel += `${hours} 小時 `;
+      if (minutes > 0) durationLabel += `${minutes} 分鐘`;
+      if (!durationLabel) durationLabel = `${slots * 30} 分鐘`;
+
+      const now = new Date();
+
+      const todayRates = state.agileRates.filter(r => isSameDay(r.from, now) && r.from >= now);
+      
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowRates = state.agileRates.filter(r => isSameDay(r.from, tomorrow));
+
+      const bestToday = findBestWindow(todayRates, slots);
+      const bestTomorrow = findBestWindow(tomorrowRates, slots);
 
       const resultEl = document.getElementById('plannerResult');
       resultEl.classList.remove('hidden');
-      resultEl.innerHTML = `
-        <div class="text-xs text-slate-400">最佳 ${hours} 小時連續運轉建議：</div>
-        <div class="text-base font-bold text-emerald-400">${formatTime(start)} ~ ${formatTime(end)}</div>
-        <div class="text-xs text-slate-300">預估平均電價：<span class="font-bold text-amber-400">${avg} p/kWh</span></div>
-      `;
+      
+      let htmlContent = `<div class="text-xs font-bold text-slate-300 pb-1 border-b border-slate-800">最佳 ${durationLabel} 連續運轉建議</div>`;
+
+      if (bestToday) {
+        htmlContent += `
+          <div class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[11px] font-bold text-amber-400">📅 今日剩餘最佳時段</span>
+              <span class="text-xs font-bold text-amber-400">${bestToday.avg} p/kWh</span>
+            </div>
+            <div class="text-sm font-bold text-emerald-400">${formatTime(bestToday.start)} ~ ${formatTime(bestToday.end)}</div>
+          </div>
+        `;
+      } else {
+        htmlContent += `
+          <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-800 text-xs text-slate-500">
+            📅 今日剩餘時間不足以進行 ${durationLabel} 連續運轉
+          </div>
+        `;
+      }
+
+      if (bestTomorrow) {
+        htmlContent += `
+          <div class="p-2.5 rounded-xl bg-slate-800/60 border border-slate-700/60">
+            <div class="flex justify-between items-center mb-1">
+              <span class="text-[11px] font-bold text-emerald-400">📅 明日最佳時段</span>
+              <span class="text-xs font-bold text-amber-400">${bestTomorrow.avg} p/kWh</span>
+            </div>
+            <div class="text-sm font-bold text-emerald-400">${formatTime(bestTomorrow.start)} ~ ${formatTime(bestTomorrow.end)}</div>
+          </div>
+        `;
+      } else {
+        htmlContent += `
+          <div class="p-2.5 rounded-xl bg-slate-800/40 border border-slate-800 text-xs text-slate-500">
+            📅 明日電價數據尚未發布 (每日 UK 16:00 更新)
+          </div>
+        `;
+      }
+
+      resultEl.innerHTML = htmlContent;
     }
 
     function syncUI() {
@@ -841,7 +977,6 @@
       });
     }
 
-    // 點擊「測試發送通知」按鈕觸發
     function testNotificationFlow() {
       if (!("Notification" in window)) return alert("此瀏覽器不支援通知 API");
 
@@ -853,14 +988,13 @@
             alert("目前通知總開關為「關閉」狀態，請先開啟開關！");
             return;
           }
-          sendNotificationPayload(rules, null); // 傳入 null 表示檢測「未來所有時段」
+          sendNotificationPayload(rules, null);
         } else {
           alert("通知權限未開啟或被拒絕，請至瀏覽器設定中開啟。");
         }
       });
     }
 
-    // 修正點：新增 targetDate 支援。若傳入特定日期（例如明日），會專門篩選該日期的電價
     function sendNotificationPayload(rules, targetDate = null) {
       const now = new Date();
       let targetRates = [];
@@ -893,7 +1027,6 @@
       }
     }
 
-    // 英國時間 16:00 自動推播檢查
     function checkAndTrigger1600Notification() {
       const rules = saveNotifRules();
       if (!rules.enabled) return;
@@ -902,7 +1035,6 @@
       const { ukDate, isAfter16 } = getUKTimeInfo();
       const todayStr = ukDate.toISOString().split('T')[0];
 
-      // 從 localStorage 讀取已通知過的日期，防止當天重複觸發
       const notifiedDates = JSON.parse(localStorage.getItem('notified_dates') || '[]');
 
       if (isAfter16 && !notifiedDates.includes(todayStr)) {
@@ -911,7 +1043,7 @@
         const tomorrowRates = state.agileRates.filter(r => isSameDay(r.from, tomorrow));
 
         if (tomorrowRates.length > 0) {
-          sendNotificationPayload(rules, tomorrow); // 修正點：傳入明日日期進行比對
+          sendNotificationPayload(rules, tomorrow);
           notifiedDates.push(todayStr);
           localStorage.setItem('notified_dates', JSON.stringify(notifiedDates));
         }
@@ -940,9 +1072,8 @@
       await fetchAgileRates();
     }
 
-    // 輪詢與時間時鐘更新
     setInterval(checkAndTrigger1600Notification, 300000);
-    setInterval(updateUKClockUI, 10000); // 修正點：每 10 秒即時更新頁面 UK 時計
+    setInterval(updateUKClockUI, 10000);
 
     lucide.createIcons();
     initData();
